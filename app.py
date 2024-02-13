@@ -7,7 +7,7 @@ from database import db
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'thisissecret'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:admin123@localhost:3306/flask_auth'
 
 login_manager = LoginManager()
 db.init_app(app)
