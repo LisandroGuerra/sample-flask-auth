@@ -59,7 +59,7 @@ def create_user():
     password = data.get('password')
 
     if username and password:
-        user = User(username=username, password=password)
+        user = User(username=username, password=password, role='user')
         db.session.add(user)
         db.session.commit()
         return {'message': 'User created successfully!'}
@@ -70,7 +70,9 @@ def create_user():
 @login_required
 def get_user(user_id):
     '''Get user by ID route'''
+
     user = User.query.get(user_id)
+
     if user:
         return {'username': user.username}
     return jsonify({'message': f'User {user_id} not found!'}), 404
@@ -83,16 +85,22 @@ def update_user(user_id):
     data = request.json
     username = data.get('username')
     password = data.get('password')
+    role = data.get('role')
 
     user = User.query.get(user_id)
-    if user and user_id != current_user.id:
+
+    if user_id != current_user.id and current_user.role != 'admin':
+        return jsonify({'message': 'You are not allowed to update other users!'}), 403
+    if user and user_id != current_user.id and current_user.role == 'admin':
         if username:
             user.username = username
         if password:
             user.password = password
+        if role:
+            user.role = role
         db.session.commit()
         return {'message': f'User {user_id} updated successfully!'}
-    elif user and user_id == current_user.id:
+    if user and user_id == current_user.id:
         if password:
             user.password = password
         db.session.commit()
@@ -104,10 +112,14 @@ def update_user(user_id):
 @login_required
 def delete_user(user_id):
     '''Delete user by ID route'''
-    user = User.query.get(user_id)
-    if user and user_id == current_user.id:
+    if current_user.role != 'admin':
+        return jsonify({'message': 'You are not allowed to delete other users!'}), 403
+    if user_id == current_user.id:
         return jsonify({'message': 'You cannot delete yourself!'}), 403
-    if user and user_id != current_user.id:
+    
+    user = User.query.get(user_id)
+
+    if user and user_id != current_user.id and current_user.role == 'admin':
         db.session.delete(user)
         db.session.commit()
         return {'message': f'User {user_id} deleted successfully!'}
