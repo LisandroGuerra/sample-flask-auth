@@ -1,4 +1,5 @@
 '''Auth Flask app'''
+import bcrypt
 from flask import Flask, request, jsonify
 from flask_login import LoginManager, login_user, current_user, logout_user, login_required
 from models.user import User # pylint: disable=unused-import
@@ -33,7 +34,8 @@ def login():
 
     if username and password:
         user = User.query.filter_by(username=username).first()
-        if user and user.password == password:
+        check_password = bcrypt.checkpw(str.encode(password), str.encode(user.password))
+        if user and check_password:
             login_user(user)
             # print(current_user)
             # print(current_user.is_authenticated)
@@ -59,7 +61,8 @@ def create_user():
     password = data.get('password')
 
     if username and password:
-        user = User(username=username, password=password, role='user')
+        hashed_password = bcrypt.hashpw(str.encode(password), bcrypt.gensalt())
+        user = User(username=username, password=hashed_password, role='user')
         db.session.add(user)
         db.session.commit()
         return {'message': 'User created successfully!'}
@@ -74,7 +77,7 @@ def get_user(user_id):
     user = User.query.get(user_id)
 
     if user:
-        return {'username': user.username}
+        return {'username': user.username, 'role': user.role}
     return jsonify({'message': f'User {user_id} not found!'}), 404
 
 
